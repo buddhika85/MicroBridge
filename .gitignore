@@ -485,3 +485,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+
+# Stores personal overrides, machine-specific paths, and temporary tool approvals.
+.claude/settings.local.json
