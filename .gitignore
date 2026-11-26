@@ -487,5 +487,6 @@ $RECYCLE.BIN/
 *.swp
 
 
-# Stores personal overrides, machine-specific paths, and temporary tool approvals.
+# Claude Code personal settings & scratchpad
+CLAUDE.local.md
 .claude/settings.local.json
