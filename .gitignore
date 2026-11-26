@@ -487,6 +487,43 @@ $RECYCLE.BIN/
 *.swp
 
 
-# Claude Code personal settings & scratchpad
+# ==========================================
+# Azure Functions & Local Storage (Azurite)
+# ==========================================
+local.settings.json
+__blobstorage__/
+__queuestorage__/
+__azurite_db*__.json
+azurite.log
+
+# ==========================================
+# Bicep & Azure Deployment Overrides
+# ==========================================
+*.parameters.local.json
+*.bicepparam.local
+.azure/
+
+# ==========================================
+# REST Client (.http) Local Secrets
+# ==========================================
+# Ignore local environment files containing Function keys/URLs
+http-client.private.env.json
+.env
+.env.*
+
+# ==========================================
+# Claude Code Local Files
+# ==========================================
 CLAUDE.local.md
 .claude/settings.local.json
+
+# ==========================================
+# VS Code & OS Noise
+# ==========================================
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
