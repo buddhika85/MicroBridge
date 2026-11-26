@@ -1,0 +1,49 @@
+Mini spec: Integration Events demo (microfinance scenario)
+Goal
+•	Show the JD's project tasks in one small build: Service Bus pub/sub, message contract, dead-lettering and retries, Function and Logic App flows, and App Insights telemetry.
+•	It runs on Azure with fake D365 and ServiceNow sources. The rest is production-shaped.
+1. Scenario
+•	A microfinance firm keeps customers in a pretend D365 and support incidents in a pretend ServiceNow.
+•	Both send their changes as events to one Service Bus topic.
+2. Parts
+•	Fake D365 and fake ServiceNow: two tiny sources that call the intake endpoint. Use a REST client file or a small timer. They send customer-updated and incident-created events.
+•	Intake Function (HTTP trigger): the webhook endpoint. 
+o	It checks a key.
+o	It validates the payload.
+o	It wraps it in the envelope and publishes to the topic.
+o	It returns 202 for good input and 400 for bad input.
+•	Topic integration-events: a new topic in the DevPulse Service Bus namespace.
+•	Resources: put the new Functions and Logic App in a new resource group.
+3. Message envelope (same for every event)
+•	messageId, eventType, version, source, occurredAtUtc, payload.
+•	Payload is small: the customer or incident id plus the few fields consumers need.
+•	Add fields, never rename them.
+•	eventType is also set as a message property so subscriptions can filter on it.
+4. Subscriptions (each with its own dead-letter queue)
+•	customers-to-cosmos: filter eventType = customer-updated. A Function upserts into Cosmos DB, keyed by messageId.
+•	incidents-to-logicapp: filter eventType = incident-created. A Logic App has a Service Bus trigger and an action that calls the customer API or sends a notification.
+•	incidents-durable (later): same incident filter. See section 7.
+5. Reliability
+•	Auto-complete is off. A message completes only after its work succeeds.
+•	Max delivery count 5, then dead-letter with a readable reason.
+•	Consumers are idempotent: upsert by messageId, plus a timestamp check so an older event never overwrites a newer one.
+•	Dead-letter demo: send one malformed message, read its dead-letter reason, fix, and replay a copy back to the topic.
+•	For outbound HTTP calls, use the built-in .NET resilience pipeline (retry, timeout, circuit breaker).
+6. Telemetry
+•	Application Insights on the intake Function, the consumers and the Logic App.
+•	Pass messageId and the operation id in the message properties, so one KQL query follows an event from intake to Cosmos DB.
+•	One dashboard: failures, dead-letter count, processing time.
+•	One alert: dead-letter messages above zero.
+7. Durable Functions (optional, last)
+•	A starter Function receives the incident message and starts an orchestrator. The incident id is the instance id, which also blocks duplicates.
+•	The orchestrator calls activities in order: assign an owner and log it, wait for an approval event or a 30-second timer, and on timeout escalate by writing to Cosmos DB and publishing incident-escalated.
+8. Tech choices
+•	.NET 8 isolated Functions (most common in industry), or .NET 10 if you want one version across projects.
+•	Bicep for the new resources, and GitHub Actions with OIDC if time allows.
+9. Build order (always keep something working)
+•	Day 1: intake Function, topic, Cosmos consumer, one fake source.
+•	Day 2: second source, incident subscription, Logic App.
+•	Day 3: dead-letter demo and replay, dashboard and alert.
+•	After that: Durable Functions part, a readme with one diagram (a two-minute walkthrough), and a short demo.
+10. Out of scope
+•	Real D365 or ServiceNow, a UI, auth beyond the endpoint key, and load testing.
